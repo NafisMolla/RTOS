@@ -1,9 +1,26 @@
 # RTOS
 
-#this is a bare bones OS built on a DE1-SoC Board.
+![image](https://github.com/NafisMolla/RTOS/assets/37641864/59b8ed5c-6dae-468c-ba67-b38ac10e4c50)
 
-#memory management was done using first fit memory management and also supports ownership
 
-#intertask communication is done using a mailbox system.
+### Overview
 
-#there is a peemptive task scheduler using higest priority scheduling
+This is a bare bones OS built on a DE1-SoC Board. This os mimics how the very first linux kernals used to operate, by using first fit allocation and highest priority scheduling as well as inter procces communication.
+
+### Memory Management Overview
+
+This file is integral to the operating system, handling dynamic memory allocation and deallocation. It defines various macros and global variables to manage memory states, errors, sizes, and sentinel nodes that mark the boundaries of the heap. The `usr_k_mem_init` function initializes the memory system by aligning addresses, creating sentinel nodes, and setting up an initial large free memory node. The `usr_k_mem_alloc` function allocates memory by rounding the requested size to an 8-byte boundary and traversing the free list to find a suitable block. If a block is found, it either allocates the entire block or partitions it if it's larger than needed. The `allocate_node` function manages the partitioning and updates the free list accordingly. The `usr_k_mem_dealloc` function deallocates memory, ensuring the address is valid and not a sentinel, reinserts the node into the free list, and calls `coalesce` to merge adjacent free nodes, reducing fragmentation. The `usr_k_mem_count_extfrag` function counts the number of free blocks smaller than a specified size to assess fragmentation. Helper functions like `get_node_size`, `set_node_size`, `is_head_sentinel`, `is_tail_sentinel`, `get_node_p_next`, and `set_node_p_next` are used to manipulate node properties and maintain the integrity of the free list. This memory management system ensures efficient memory usage and helps maintain the overall health of the system's memory by reducing fragmentation and managing dynamic allocations.
+
+### Task Management and Scheduling Overview
+
+The task management and scheduling files are crucial components of the operating system, handling task initialization, scheduling, context switching, and priority management.
+
+The scheduler implementation file defines the core scheduling mechanism using an array of task control blocks (TCBs) with sentinel nodes marking the boundaries of each priority level. The `usr_scheduler_init` function initializes these sentinel nodes and sets up the priority queue, including adding a null task at the lowest priority level. The `usr_scheduler` function selects the next task to run by iterating through the priority levels, while the `usr_scheduler_add` and `usr_scheduler_remove` functions manage the addition and removal of tasks from the priority queues.
+
+The task management file (`k_task.c`) implements the task management functions, including task initialization (`k_tsk_init`), task creation (`k_tsk_create_new`), and context switching (`k_tsk_switch`). The `k_tsk_init` function sets up the initial tasks, including the null task and any boot-time tasks, using the scheduler to manage task priorities. The `k_tsk_create_new` function initializes a new task by setting up its stack and context, ensuring it can be scheduled and run. The `k_tsk_switch` function handles context switching between tasks, saving and restoring the task's state as needed. Additionally, the file includes functions for yielding the CPU (`k_tsk_yield`), exiting a task (`k_tsk_exit`), setting task priorities (`k_tsk_set_prio`), and retrieving task information (`k_tsk_get_info`).
+
+Together, these files provide a comprehensive task management and scheduling system, enabling efficient task handling, priority-based scheduling, and seamless context switching. The scheduler ensures that higher-priority tasks are executed first, while the task management functions maintain the overall health and integrity of the task system, allowing for dynamic task creation, management, and execution within the operating system.
+
+### Message Handling Overview
+
+This file manages inter-task communication through message passing, including creating mailboxes, sending and receiving messages, and handling blocked tasks. It defines key macros for mailbox operations, such as `START_OF_QUEUE_INDEX` and `SIZE_OF_MAILBOX_OVERHEAD_IN_BYTES`, and uses global variables like `blocked_head_sentinel` and `blocked_tail_sentinel` to manage the blocked task queue. The `usr_mailbox_push` function adds messages to a mailbox's circular queue, ensuring sufficient space, while `usr_mailbox_pop` retrieves messages, handling potential wrap-around and buffer size validation. The `usr_k_mbx_create` function creates a mailbox for the current task, ensuring it meets size requirements and initializing its properties. For blocked task management, `usr_blocked_add` and `usr_blocked_remove` add and remove tasks from the blocked queue, respectively. The `usr_k_send_msg` function sends messages to specified receiver tasks, handling cases where the receiver's mailbox is full or the message is too small, and unblocking and preempting the receiver if necessary. The `usr_k_recv_msg` function receives messages for the current task, blocking the task if the mailbox is empty, and updating the sender's task ID if provided. This file is essential for inter-task communication in the operating system, ensuring efficient message passing and synchronization between tasks, and supporting robust multitasking and coordination of task execution.
